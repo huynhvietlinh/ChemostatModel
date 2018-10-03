@@ -1,4 +1,4 @@
-# Run Matalb script files
+Run Matlab script files
   1. Copy two files Chemostat_Model.m and plot2svg.m into your work directory
   2. Create a folder named "Data" in your work directory
   2. Run the function Chemostat_Model
