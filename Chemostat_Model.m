@@ -1,10 +1,14 @@
 function Chemostat_Model
-	plot_diff_ratio;
-	simulate_and_export;
+    plot_diff_ratio;
+    plot_best_Hill_model    
+    simulate_and_export;
+    %search_parameter_Hill_function_model
 end
 
 function simulate_and_export()
-	% Herber model
+    % Load experimental data
+	[D1 D2 D3] = get_exp_data();
+    % Herber model
 	global mu_max C_max K_C V_max v_i v_o;
 	assign_Herbert_model_parameter;
 	period = 300;
@@ -12,32 +16,113 @@ function simulate_and_export()
 	[T2 Y2] = ode45(@Herbert_chemostat_ode,[0, period], [0.2, V_max, 0.2, 0.15]);
 	[T3 Y3] = ode45(@Herbert_chemostat_ode,[0, period], [0.4, V_max, 0.4, 0.35]);
 	[T4 Y4] = ode45(@Herbert_chemostat_ode,[0, period], [0.8, V_max, 0.8, 0.15]);
-	extract_and_print(T1, Y1, 4, 'Herbert_glycerol_1.dat');
-	extract_and_print(T2, Y2, 4, 'Herbert_glycerol_2.dat');
-	extract_and_print(T3, Y3, 4, 'Herbert_glycerol_4.dat');
-	extract_and_print(T4, Y4, 4, 'Herbert_glycerol_8.dat');
-	%figure;
-	%p = plot(T1, Y1(:,4), '-g', T2, Y2(:,4), '-b', T3, Y3(:,4), '-r', T4, Y4(:,4), '-m');
-	%[D1 D2 D3] = get_exp_data();
-	%hold('on');
-	%scatter(D1(:,1), D1(:,2), 30, 'g', 'filled');
-	%hold('on');
-	%scatter(D1(:,1), D1(:,6), 30, 'b', 'filled');
-	%hold('on');
-	%scatter(D1(:,1), D1(:,10), 30, 'm', 'filled');
-	%hold('on');
-	%scatter(D2(:,1), D2(:,2), 30, 'r', 'filled');
+	extract_and_print(T1, Y1, 4, 'Data/Herbert_glycerol_1.dat');
+	extract_and_print(T2, Y2, 4, 'Data/Herbert_glycerol_2.dat');
+	extract_and_print(T3, Y3, 4, 'Data/Herbert_glycerol_4.dat');
+	extract_and_print(T4, Y4, 4, 'Data/Herbert_glycerol_8.dat');
+	figure;
+	p = plot(T1, Y1(:,4), '-g', T2, Y2(:,4), '-b', T3, Y3(:,4), '-r', T4, Y4(:,4), '-m');
+	hold('on');
+	scatter(D1(:,1), D1(:,2), 30, 'g', 'filled');
+	hold('on');
+	scatter(D1(:,1), D1(:,6), 30, 'b', 'filled');
+	hold('on');
+	scatter(D1(:,1), D1(:,10), 30, 'm', 'filled');
+	hold('on');
+	scatter(D2(:,1), D2(:,2), 30, 'r', 'filled');
 	% Extended model
 	[T1 Y1] = simulate_extended_model(0.1, 0.15, 2, 150);
 	[T2 Y2] = simulate_extended_model(0.2, 0.15, 3, 155);
 	[T3 Y3] = simulate_extended_model(0.4, 0.35, 4, 160);
 	[T4 Y4] = simulate_extended_model(0.8, 0.15, 5, 155);
-	extract_and_print(T1,Y1, 6, 'Extended_glycerol_1.dat');
-	extract_and_print(T2,Y2, 6, 'Extended_glycerol_2.dat');
-	extract_and_print(T3,Y3, 6, 'Extended_glycerol_4.dat');
-	extract_and_print(T4,Y4, 6, 'Extended_glycerol_8.dat');
-	%figure;
-	%p = plot(T1, Y1(:,5), '-g', T2, Y2(:,5), '-b', T3, Y3(:,5), '-r', T4, Y4(:,5), '-m');
+	extract_and_print(T1,Y1, 5, 'Data/Extended_glycerol_1.dat');
+	extract_and_print(T2,Y2, 5, 'Data/Extended_glycerol_2.dat');
+	extract_and_print(T3,Y3, 5, 'Data/Extended_glycerol_4.dat');
+	extract_and_print(T4,Y4, 5, 'Data/Extended_glycerol_8.dat');
+	figure;
+	p = plot(T1, Y1(:,5), '-g', T2, Y2(:,5), '-b', T3, Y3(:,5), '-r', T4, Y4(:,5), '-m');
+    hold('on');
+	scatter(D1(:,1), D1(:,2), 30, 'g', 'filled');
+	hold('on');
+	scatter(D1(:,1), D1(:,6), 30, 'b', 'filled');
+	hold('on');
+	scatter(D1(:,1), D1(:,10), 30, 'm', 'filled');
+	hold('on');
+	scatter(D2(:,1), D2(:,2), 30, 'r', 'filled');
+end
+
+function plot_best_Hill_model
+    global alpha_H K_H n_H;
+    alpha_H = 20;
+    K_H = 20;
+    n_H = 1.5;
+    plot_Hill_function_trial(true);
+end
+
+function search_parameter_Hill_function_model
+    global alpha_H K_H n_H;
+    alpha_H_list = [15,16,17,18,19,20,21,22,23,24,25];
+    K_H_list = [15,16,17,18,19,20,21,22,23,24,25];
+    n_H_list = [1.5,2];
+    disp([2.1, 3.15, 4.4, 5.5]);
+    alpha_H_best = -1;
+    K_H_best = -1;
+    n_H_best = -1;
+    min_diff = 1e6;
+    for i = 1:length(alpha_H_list)
+        disp(i);
+        for j = 1:length(K_H_list)
+            for k = 1:length(n_H_list)
+                 alpha_H = alpha_H_list(i);
+                 K_H = K_H_list(j);
+                 n_H = n_H_list(k);                
+                 OD = plot_Hill_function_trial(false);
+                 diff = abs(OD(1) - 2.1) + abs(OD(2) - 3.15) + abs(OD(3) - 4.4) + abs(OD(4) - 5.5);
+                 if (diff < min_diff)
+                     alpha_H_best = alpha_H;
+                     K_H_best = K_H;
+                     n_H_best = n_H;
+                    min_diff = diff;
+                 end
+            end
+        end        
+    end
+    disp([alpha_H_best, K_H_best, n_H_best]);
+    alpha_H = alpha_H_best;
+    K_H = K_H_best;
+    n_H = n_H_best;                
+    plot_Hill_function_trial(true);
+end
+
+function OD = plot_Hill_function_trial(is_plotted)
+    % Extended model but with Hill function for the glycerol consumption
+    global mu_max C_max K_C V_max v_i v_o;
+	assign_extended_model_parameter;
+    wt_phase_time = 80;
+	[T1 Y1] = ode45(@extended_model_ode_with_Hill_function,[0, wt_phase_time], [0.1, V_max, 0.1, 0.15]);
+    [T2 Y2] = ode45(@extended_model_ode_with_Hill_function,[0, wt_phase_time], [0.2, V_max, 0.2, 0.15]);
+    [T3 Y3] = ode45(@extended_model_ode_with_Hill_function,[0, wt_phase_time], [0.4, V_max, 0.4, 0.35]);
+    [T4 Y4] = ode45(@extended_model_ode_with_Hill_function,[0, wt_phase_time], [0.8, V_max, 0.8, 0.15]);
+    OD = [Y1(length(Y1),4), Y2(length(Y2),4), Y3(length(Y3),4), Y4(length(Y4),4)];    
+    %disp(OD);
+    if (is_plotted)
+        figure;
+        p = plot(T1, Y1(:,4), '-g', T2, Y2(:,4), '-b', T3, Y3(:,4), '-r', T4, Y4(:,4), '-m');
+        [D1 D2 D3] = get_exp_data();
+        hold('on');
+        scatter(D1(:,1), D1(:,2), 30, 'g', 'filled');
+        hold('on');
+        scatter(D1(:,1), D1(:,6), 30, 'b', 'filled');
+        hold('on');
+        scatter(D1(:,1), D1(:,10), 30, 'm', 'filled');
+        hold('on');
+        scatter(D2(:,1), D2(:,2), 30, 'r', 'filled');
+        %
+        extract_and_print(T1, Y1, 4, 'Data/Hill_model_glycerol_1.dat');
+        extract_and_print(T2, Y2, 4, 'Data/Hill_model_glycerol_2.dat');
+        extract_and_print(T3, Y3, 4, 'Data/Hill_model_glycerol_4.dat');
+        extract_and_print(T4, Y4, 4, 'Data/Hill_model_glycerol_8.dat');
+    end
 end
 
 function plot_diff_ratio
@@ -51,16 +136,16 @@ function plot_diff_ratio
 	[T2 Y2] = ode45(@Herbert_chemostat_ode,[0, period], [0.1, V_max, 0.1, 0.15]);
 	K_ratio = 0.5;
 	[T3 Y3] = ode45(@Herbert_chemostat_ode,[0, period], [0.1, V_max, 0.1, 0.15]);
-	extract_and_print(T1,Y1, 4, 'Herbert_K_C_1.dat');
-	extract_and_print(T2,Y2, 4, 'Herbert_K_C_2.dat');
-	extract_and_print(T3,Y3, 4, 'Herbert_K_C_0_5.dat');
-	%figure;
+	extract_and_print(T1,Y1, 4, 'Data/Herbert_K_C_1.dat');
+	extract_and_print(T2,Y2, 4, 'Data/Herbert_K_C_2.dat');
+	extract_and_print(T3,Y3, 4, 'Data/Herbert_K_C_0_5.dat');
+	figure;
 	%p = plot(T1, log(Y1(:,4)), '-g', T2, log(Y2(:,4)), '-b', T3, log(Y3(:,4)), '-r');
 	%hold on;
-	%p = plot(T1, Y1(:,3), '-g', T2, Y2(:,3), '-b', T3, Y3(:,3), '-r');
-	%legend('K_C = K_M', 'K_C = 2K_M', 'K_C = 0.5K_M');
-	%xlabel('Time [h]');
-	%ylabel('OD');
+	p = plot(T1, Y1(:,4), '-g', T2, Y2(:,4), '-b', T3, Y3(:,4), '-r');
+	legend('K_C = K_M', 'K_C = 2K_M', 'K_C = 0.5K_M');
+	xlabel('Time [h]');
+	ylabel('OD');
 	%plot2svg('Diff_K_ratio.svg');
 end
 
@@ -69,9 +154,9 @@ function [T, Y] = simulate_extended_model(init_conc, init_OD, mutated_strain, wt
 	assign_extended_model_parameter;
 	% WT: strain = 1
 	%wt_phase_time = 100;
-	[T1 Y1] = ode45(@extended_model_ode,[0, wt_phase_time], [1, init_conc, V_max, init_conc, init_conc, init_OD]);
+	[T1 Y1] = ode45(@extended_model_ode,[0, wt_phase_time], [1, init_conc, V_max, init_conc, init_OD]);
 	% Mutant: strain = 2
-	[T2 Y2] = ode45(@extended_model_ode,[0, 300 - wt_phase_time], [mutated_strain, Y1(size(Y1,1),2), Y1(size(Y1,1),3), Y1(size(Y1,1),4), Y1(size(Y1,1),5), Y1(size(Y1,1),6)]);
+	[T2 Y2] = ode45(@extended_model_ode,[0, 300 - wt_phase_time], [mutated_strain, Y1(size(Y1,1),2), Y1(size(Y1,1),3), Y1(size(Y1,1),4), Y1(size(Y1,1),5)]);
 	T = cat(1,T1,T2 + wt_phase_time);
 	Y = cat(1,Y1,Y2);	
 end
@@ -92,10 +177,9 @@ function dydt = extended_model_ode(t,y)
 	C_0 = y(2);	% In-flux glycerol concentration	
 	V = y(3);	% Culture volume
 	C = y(4);	% Extracellular carbon source
-	C_eff = y(5);	% Effective carbon source
-	B = y(6);	% Biomass
+	B = y(5);	% Biomass
 	
-	dydt = zeros(6,1);
+	dydt = zeros(5,1);
 	% V - Volume
 	if (V > V_max)
 		rho_V = v_o;
@@ -107,25 +191,59 @@ function dydt = extended_model_ode(t,y)
 	switch Strain
 		case 1
 			Stress = 1/(1 + exp(0.09*(115 - t)));
-			mu = 0.9*mu_max*(C_eff/(C_eff + 2*K_C))*(1 - Stress); % Fit
-			dydt(4) = C_0*v_i/V - C*v_i/V - 0.8*C_max*(C_eff/(C_eff + K_C))*(B/V); % Fit			
-			dydt(5) = C_0*v_i/V - C_eff*v_i/V - 0.8*(1 + 0.055*B^2)*C_max*(C_eff/(C_eff + K_C))*(B/V);
+			mu = 0.9*mu_max*(C/(C + 2*K_C))*(1 - Stress); % Fit
+			dydt(4) = (v_i/V)*(C_0 - C) - (C/(C + K_C))*(B/V)*0.8*C_max*(1 + 0.055*B^2);
 		case 2
 			mu = 0.32*mu_max*(C/(C + K_C));
-			dydt(4) = C_0*v_i/V - C*v_i/V - 0.6*C_max*(C/(C + K_C))*(B/V);
+			dydt(4) = (v_i/V)*(C_0 - C) - (C/(C + K_C))*(B/V)*0.45*C_max*(1 + 0.055*B^2);
 		case 3
 			mu = 0.35*mu_max*(C/(C + K_C));
-			dydt(4) = C_0*v_i/V - C*v_i/V - 0.7*C_max*(C/(C + K_C))*(B/V);
+			dydt(4) = (v_i/V)*(C_0 - C) - (C/(C + K_C))*(B/V)*0.45*C_max*(1 + 0.055*B^2);
 		case 4
 			mu = 0.315*mu_max*(C/(C + K_C));
-			dydt(4) = C_0*v_i/V - C*v_i/V - 1.05*C_max*(C/(C + K_C))*(B/V);
+			dydt(4) = (v_i/V)*(C_0 - C) - (C/(C + K_C))*(B/V)*0.55*C_max*(1 + 0.055*B^2);
 		case 5
 			mu = 0.31*mu_max*(C/(C + K_C));
-			dydt(4) = C_0*v_i/V - C*v_i/V - 1.4*C_max*(C/(C + K_C))*(B/V);
+			dydt(4) = (v_i/V)*(C_0 - C) - (C/(C + K_C))*(B/V)*0.5*C_max*(1 + 0.055*B^2);
 	end
 	% Biomass
-	dydt(6)  = mu*B - rho_V*(B/V);
+	dydt(5)  = mu*B - rho_V*(B/V);
 end
+function dydt = extended_model_ode_with_Hill_function(t,y)
+	global V_max v_i v_o mu_max C_max K_C;
+    global alpha_H K_H n_H;
+	% Parameters
+	% V_max	
+	% v_o
+	% v_i
+	% mu_max	maximum growth rate
+	% v_C_max
+	% K_C
+	
+	% -------------------------------------------
+	% Variables
+	C_0 = y(1);	% In-flux glycerol concentration	
+	V = y(2);	% Culture volume	
+	C = y(3);	% Effective carbon source
+	B = y(4);	% Biomass
+	
+	dydt = zeros(4,1);
+	% V - Volume
+	if (V > V_max)
+		rho_V = v_o;
+	else
+		rho_V = 0;
+	end
+	dydt(2) = v_i - rho_V;	
+    Stress = 1/(1 + exp(0.09*(115 - t)));
+	mu = 0.9*mu_max*(C/(C + 2*K_C))*(1 - Stress); % Fit		
+	%dydt(3) = C_0*v_i/V - C_eff*v_i/V - 0.8*(1 + 0.055*B^2)*C_max*(C_eff/(C_eff + K_C))*(B/V);
+    %dydt(3) = (v_i/V)*(C_0 - C) - C_max*(C/(C + K_C))*(B/V)*0.8*(1 + 0.055*B^2);
+    dydt(3) = (v_i/V)*(C_0 - C) - C_max*(C/(C + K_C))*(B/V)*alpha_H*(1/(1 + (K_H/B)^n_H));
+	% Biomass
+	dydt(4)  = mu*B - rho_V*(B/V);
+end
+
 
 function dydt = Herbert_chemostat_ode(t,y)
 	global mu_max C_max K_C V_max v_i v_o K_ratio;
